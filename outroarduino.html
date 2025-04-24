@@ -1,0 +1,94 @@
+#include <Servo.h>
+
+    // Definição dos pinos
+    const int SERVO_PIN = 9;    // Servo conectado ao pino D9
+    const int BUZZER_PIN = 8;   // Buzzer conectado ao pino D8
+    
+    // Criação do objeto Servo
+    Servo myservo;
+    
+    // Variável para acompanhar a última posição
+    int ultimaPosicao = -1;
+    
+    void setup() {
+      // Inicializa a comunicação serial
+      Serial.begin(9600);
+      Serial.println("Iniciando...");
+      
+      // Configura o buzzer
+      pinMode(BUZZER_PIN, OUTPUT);
+      digitalWrite(BUZZER_PIN, LOW);
+      Serial.println("Buzzer configurado");
+      
+      // Teste do buzzer
+      Serial.println("Testando buzzer...");
+      digitalWrite(BUZZER_PIN, HIGH);
+      delay(300);
+      digitalWrite(BUZZER_PIN, LOW);
+      Serial.println("Teste do buzzer concluído");
+      
+      // Configura o servo
+      Serial.println("Configurando servo...");
+      if (myservo.attach(SERVO_PIN)) {
+        Serial.println("Servo conectado com sucesso");
+      } else {
+        Serial.println("Problema ao conectar o servo");
+      }
+      
+      // Teste do servo
+      Serial.println("Testando servo - movendo para posição 0");
+      myservo.write(0);
+      delay(1000);
+      
+      Serial.println("Movendo para posição 90");
+      myservo.write(90);
+      delay(1000);
+      
+      Serial.println("Movendo para posição 0 novamente");
+      myservo.write(0);
+      delay(1000);
+      
+      Serial.println("Sistema pronto para receber comandos");
+    }
+    
+    void loop() {
+      // Verifica se há dados disponíveis na porta serial
+      if (Serial.available() > 0) {
+        // Lê o caractere enviado pelo Python
+        char command = Serial.read();
+        
+        // Processa o comando
+        if (command == '1') {  // EPI detectado
+          Serial.println("Comando '1' recebido - EPI detectado");
+          
+          if (ultimaPosicao != 90) {
+            Serial.println("Movendo servo para 90 graus");
+            myservo.write(90);   // Gira o servo para 90 graus
+            ultimaPosicao = 90;
+          }
+          
+          digitalWrite(BUZZER_PIN, LOW);  // Desliga o buzzer
+          Serial.println("Buzzer desligado");
+        } 
+        else if (command == '0') {  // EPI não detectado
+          Serial.println("Comando '0' recebido - EPI não detectado");
+          
+          if (ultimaPosicao != 0) {
+            Serial.println("Movendo servo para 0 graus");
+            myservo.write(0);    // Retorna o servo para 0 graus
+            ultimaPosicao = 0;
+          }
+          
+          digitalWrite(BUZZER_PIN, HIGH);  // Liga o buzzer
+          Serial.println("Buzzer ligado");
+        }
+        else {
+          // Comando desconhecido
+          Serial.print("Comando desconhecido recebido: ");
+          Serial.println(command);
+        }
+      }
+      
+      // Pequena pausa para estabilidade
+      delay(10);
+    }

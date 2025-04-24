@@ -27,48 +27,53 @@ class PPEApp:
             port = 'COM3'  # Altere para a porta correta do seu Arduino
             print(f"Conectando ao Arduino na porta {port}...")
             self.arduino = serial.Serial(port, 9600, timeout=1)
-            time.sleep(2)  # Aguarde a inicialização da comunicação serial
+            time.sleep(3)  # Aguarde a inicialização da comunicação serial
             
-            # Limpar o buffer de entrada para remover quaisquer bytes iniciais
+            # Limpar o buffer de entrada
             self.arduino.reset_input_buffer()
             
             print("Arduino conectado com sucesso!")
+            
+            # Teste manual dos comandos
+            print("Testando comando EPI NÃO DETECTADO...")
+            self.arduino.write(b'0')
+            time.sleep(2)
+            self.clear_buffer()
+            
+            print("Testando comando EPI DETECTADO...")
+            self.arduino.write(b'1')
+            time.sleep(2)
+            self.clear_buffer()
+            
+            print("Voltando para estado inicial (EPI NÃO DETECTADO)...")
+            self.arduino.write(b'0')
+            time.sleep(1)
+            self.clear_buffer()
             
         except Exception as e:
             print(f"Erro ao conectar ao Arduino: {e}")
             exit()
 
-    def read_arduino_response(self):
-        """Lê a resposta do Arduino com tratamento de erros de decodificação"""
-        time.sleep(0.1)  # Pequena pausa para Arduino processar
+    def clear_buffer(self):
+        """Limpa o buffer serial de entrada"""
         try:
-            while self.arduino.in_waiting > 0:
-                try:
-                    line = self.arduino.readline().decode('ascii', errors='replace')
-                    print(f"Arduino responde: {line.strip()}")
-                except Exception as e:
-                    # Ignore erros de decodificação e continue
-                    print(f"Erro ao ler resposta do Arduino: {e}")
-                    # Limpar o buffer para evitar mais problemas
-                    self.arduino.reset_input_buffer()
-        except Exception as e:
-            print(f"Erro no read_arduino_response: {e}")
+            self.arduino.reset_input_buffer()
+        except:
+            pass
             
     def acionar_dispositivos(self, epi_detectado):
         try:
-            # Só envia comando se o status mudou
-            if self.previous_detection != epi_detectado:
-                if epi_detectado:
-                    print("EPI DETECTADO ✅ - Enviando comando '1'")
-                    self.arduino.write(b'1')  # Envia comando sem terminador
-                else:
-                    print("EPI NÃO DETECTADO ❌ - Enviando comando '0'")
-                    self.arduino.write(b'0')  # Envia comando sem terminador
-                
-                self.arduino.flush()  # Garante que o comando é enviado
-                self.previous_detection = epi_detectado
-                
-                # Não tenta ler resposta do Arduino para evitar problemas de codificação
+            if epi_detectado:
+                print("EPI DETECTADO ✅ - Enviando comando '1'")
+                self.arduino.write(b'1')
+                time.sleep(0.1)  # Pequeno delay após enviar comando
+            else:
+                print("EPI NÃO DETECTADO ❌ - Enviando comando '0'")
+                self.arduino.write(b'0')
+                time.sleep(0.1)  # Pequeno delay após enviar comando
+            
+            # Não verificamos se o status mudou - enviamos sempre
+            self.previous_detection = epi_detectado
                 
         except Exception as e:
             print(f"Erro ao comunicar com Arduino: {e}")
